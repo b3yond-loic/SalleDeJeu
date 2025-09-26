@@ -35,5 +35,9 @@ l’affichage en console,
 
 la logique de jeu en temps réel.
 
+## 🕹️ Jeux disponibles
+
+- [Snake](Snake.c%20Code)  
+
 ✨ Amusez-vous bien dans la SalleDeJeu !
 
