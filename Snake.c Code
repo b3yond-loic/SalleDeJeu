@@ -1,0 +1,154 @@
+#include <stdio.h>
+#include <conio.h> /*getch et kbhit*/
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h> // pour le usleep
+
+#define WIDTH 20  
+#define HEIGHT 10
+#define MAX_LENGTH 100
+
+/*------------------------------------------------------------------------*/
+
+int getHighScore() {
+    FILE *file = fopen("highscore.txt", "r");
+    int highscore = 0;
+    if (file) {
+        fscanf(file, "%d", &highscore);
+        fclose(file);
+    }
+    return highscore;
+}
+
+void setHighScore(int score) {
+    int highscore = getHighScore();
+    if (score > highscore) {
+        FILE *file = fopen("highscore.txt", "w");
+        if (file) {
+            fprintf(file, "%d", score);
+            fclose(file);
+        }
+    }
+}
+
+/*------------------------------------------------------------------------*/
+
+int main() {
+
+    int head_x = WIDTH / 2, head_y = HEIGHT / 2;
+    int body_x[MAX_LENGTH], body_y[MAX_LENGTH];
+    int length = 0;
+    int apple_x, apple_y;
+    int score = 0;
+    char dir = 'd';
+    int bestScore = getHighScore();
+
+
+
+    srand(time(NULL)); // generateur aléa
+
+    do{
+        apple_x = rand() % (WIDTH-2) + 1; 
+        apple_y = rand() % (HEIGHT-2) + 1;
+    } while (apple_x == head_x && apple_y == head_y);   
+
+    while(1) {
+
+        printf("\033[H\033[J");
+    
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                int printed = 0;
+
+                if (y == 0 || y == HEIGHT - 1 || x == 0 || x == WIDTH - 1) {
+                    printf("\033[33m#\033[0m"); 
+                    printed = 1;
+                }
+                else if (x == head_x && y == head_y) {
+                    printf("\033[32m@\033[0m");
+                    printed = 1;
+                }
+                else if (x == apple_x && y == apple_y) {
+                    printf("\033[31m*\033[0m"); 
+                    printed = 1;
+                }
+                else {
+                    for (int i = 0; i < length; i++) {
+                        if (x == body_x[i] && y == body_y[i]) {
+                            printf("\033[36mo\033[0m");
+                            printed = 1;
+                            break;
+                        }
+                    }
+                }
+
+                if (!printed) printf(" "); 
+            }
+            printf("\n"); 
+        }
+
+        
+
+        printf("score : %d  |  meilleur score : %d\n", score, bestScore);
+
+
+        for(int i=length-1;i>0;i--){
+            body_x[i]=body_x[i-1];
+            body_y[i]=body_y[i-1];
+        }
+        if(length>0){
+            body_x[0]=head_x;
+            body_y[0]=head_y;
+        }
+        if(kbhit()){
+            char key = getch();
+            if(key=='z' && dir!='b') dir='h';
+            else if(key=='s' && dir!='h') dir='b';
+            else if(key=='q' && dir!='d') dir='g';
+            else if(key=='d' && dir!='g') dir='d';
+            else if(key=='e') break;
+        }
+
+        
+        if(dir=='d') head_x++;
+        else if(dir=='g') head_x--;
+        else if(dir=='h') head_y--;
+        else if(dir=='b') head_y++;
+
+
+       
+        if(head_x==0 || head_x==WIDTH-1 || head_y==0 || head_y==HEIGHT-1){
+            printf("Game Over! Score final: %d\n", score);
+            break;
+        }
+
+        
+        for(int i=0;i<length;i++){
+            if(head_x==body_x[i] && head_y==body_y[i]){
+                printf("Game Over! Score final: %d\n", score);
+                return 0;
+            }
+        }
+
+        
+        if(head_x==apple_x && head_y==apple_y){
+            score++;
+            if(length<MAX_LENGTH) length++;
+            do {
+                apple_x = rand() % (WIDTH-2) + 1;
+                apple_y = rand() % (HEIGHT-2) + 1;
+            } while (apple_x == head_x && apple_y == head_y);
+        }
+
+        usleep(280000); 
+
+        if (score > bestScore) bestScore = score;
+        setHighScore(score);
+
+
+    }
+
+    return 0;
+
+}
+/*-------------------------GOOD--GAME----------------------------------*/
