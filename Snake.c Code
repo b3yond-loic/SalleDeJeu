@@ -1,3 +1,5 @@
+/* Jeu Snake, controlez le sepent avec z = haut, s = bas, q = gauche, d = droite */
+
 #include <stdio.h>
 #include <conio.h> /*getch et kbhit*/
 #include <stdlib.h>
