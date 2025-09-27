@@ -37,7 +37,11 @@ la logique de jeu en temps réel.
 
 ## 🕹️ Jeux disponibles
 
-- [Snake](Snake.c%20Code)  
+- [Snake](Snake.c%20Code)
+
+Version en python:
+
+-
 
 ✨ Amusez-vous bien dans la SalleDeJeu !
 
