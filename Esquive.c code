@@ -1,0 +1,143 @@
+
+
+/*Jeu Esquive, un petit jeu ou il faut eviter les murs, et ramasser les loot. 
+deplacez le personnage grace au fleche z,q,s,d.*/
+
+#include <stdio.h>
+#include <conio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+
+#define WIDTH 20
+#define HEIGHT 10
+#define WALL_COUNT 8
+#define WALL_INTERVAL 3000000    
+#define WALL_WARNING 500000      
+#define MAX_WALL_COUNT 30
+#define DIFFICULTY_INTERVAL 10000000  
+
+int main() {
+    int player_x = WIDTH / 2;
+    int player_y = HEIGHT / 2;
+    char dir = ' ';
+    int score = 0;
+    int map[HEIGHT][WIDTH] = {0};
+    int current_wall_count = WALL_COUNT;
+
+    srand(time(NULL));
+
+    // Placer la pomme 
+    int apple_x = rand() % (WIDTH - 2) + 1;
+    int apple_y = rand() % (HEIGHT - 2) + 1;
+    map[apple_y][apple_x] = 2; 
+
+    clock_t last_wall_time = clock();
+    clock_t last_difficulty_time = clock();
+
+    while (1) {
+        printf("\033[H\033[J");
+        printf("Score: %d\n", score);
+
+        // Temps écoulé
+        clock_t elapsed_wall = clock() - last_wall_time;
+        int micro_elapsed_wall = elapsed_wall * 1000000 / CLOCKS_PER_SEC;
+
+        clock_t elapsed_diff = clock() - last_difficulty_time;
+        int micro_elapsed_diff = elapsed_diff * 1000000 / CLOCKS_PER_SEC;
+
+        // Affichage de la carte
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                if (y == 0 || y == HEIGHT - 1 || x == 0 || x == WIDTH - 1)
+                    printf("\033[91m#\033[0m"); 
+                else if (x == player_x && y == player_y)
+                    printf("\033[34m@\033[0m"); 
+                else if (map[y][x] == 1) {
+                    if (micro_elapsed_wall >= WALL_INTERVAL - WALL_WARNING)
+                        printf("\033[31m#\033[0m"); 
+                    else
+                        printf("\033[91m#\033[0m"); 
+                }
+                else if (map[y][x] == 2)
+                    printf("\033[32m*\033[0m"); 
+                else
+                    printf(" ");
+            }
+            printf("\n");
+        }
+
+        // Déplacement joueur
+        if (kbhit()) {
+            dir = getch();
+            int next_x = player_x;
+            int next_y = player_y;
+
+            if (dir == 'z') next_y--;
+            else if (dir == 's') next_y++;
+            else if (dir == 'q') next_x--;
+            else if (dir == 'd') next_x++;
+            else if (dir == 'e') break;
+
+            // Collision bordure
+            if (next_x == 0 || next_x == WIDTH - 1 || next_y == 0 || next_y == HEIGHT - 1) {
+                printf("Game Over! Vous avez touché un mur.\n");
+                break;
+            }
+
+            // Collision mur central
+            if (map[next_y][next_x] == 1) {
+                printf("Game Over! Vous avez touché un mur central.\n");
+                break;
+            }
+
+            player_x = next_x;
+            player_y = next_y;
+
+            // Ramasser la pomme
+            if (map[player_y][player_x] == 2) {
+                score++;
+                map[player_y][player_x] = 0;
+                do {
+                    apple_x = rand() % (WIDTH - 2) + 1;
+                    apple_y = rand() % (HEIGHT - 2) + 1;
+                } while (map[apple_y][apple_x] != 0);
+                map[apple_y][apple_x] = 2;
+            }
+        }
+
+        // Repositionner murs centraux toutes les WALL_INTERVAL
+        if (micro_elapsed_wall >= WALL_INTERVAL) {
+            // Effacer anciens murs
+            for (int y = 1; y < HEIGHT - 1; y++)
+                for (int x = 1; x < WIDTH - 1; x++)
+                    if (map[y][x] == 1) map[y][x] = 0;
+
+            // Placer nouveaux murs
+            for (int i = 0; i < current_wall_count; i++) {
+                int wx, wy;
+                do {
+                    wx = rand() % (WIDTH - 2) + 1;
+                    wy = rand() % (HEIGHT - 2) + 1;
+                } while ((wx == player_x && wy == player_y) || map[wy][wx] != 0 || map[wy][wx] == 2);
+                map[wy][wx] = 1;
+            }
+
+            last_wall_time = clock();
+        }
+
+        // Augmenter la difficulté toutes les DIFFICULTY_INTERVAL
+        if (micro_elapsed_diff >= DIFFICULTY_INTERVAL) {
+            if (current_wall_count < MAX_WALL_COUNT)
+                current_wall_count++;
+            last_difficulty_time = clock();
+        }
+
+        usleep(150000);
+    }
+
+    printf("Score final: %d\n", score);
+    return 0;
+}
+
+/*-----------------GOOD---GAME---------------------*/
