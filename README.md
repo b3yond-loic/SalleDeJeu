@@ -41,6 +41,8 @@ la logique de jeu en temps réel.
 
 - [Esquive](Esquive.c%20code)
 
+- [Tetris](Tetris.c%20code)
+
 Version en python:
 
 -[Snake2.0](Snake2.0)
