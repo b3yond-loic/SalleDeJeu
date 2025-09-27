@@ -39,6 +39,8 @@ la logique de jeu en temps réel.
 
 - [Snake](Snake.c%20Code)
 
+- [Esquive](Esquive.c%20Code)
+
 Version en python:
 
 -[Snake2.0](Snake2.0)
