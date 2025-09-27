@@ -1,0 +1,166 @@
+
+
+/* Petit tetris compilé en C, q et d pour deplacer la piece de gauche à droite,
+z et s pour la rotation de la piece.*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <conio.h>
+#include <unistd.h>
+#include <time.h>
+
+#define WIDTH 10
+#define HEIGHT 20
+#define TICK_USEC 500000
+
+int score = 0;
+int board[HEIGHT][WIDTH] = {0};
+
+// Définitions des 7 pièces Tetris 
+int pieces[7][4][4] = {
+    {{0,0,0,0},{1,1,1,1},{0,0,0,0},{0,0,0,0}}, 
+    {{0,0,0,0},{0,1,1,0},{0,1,1,0},{0,0,0,0}}, 
+    {{0,0,0,0},{1,1,1,0},{0,1,0,0},{0,0,0,0}}, 
+    {{0,0,0,0},{0,1,1,0},{1,1,0,0},{0,0,0,0}}, 
+    {{0,0,0,0},{1,1,0,0},{0,1,1,0},{0,0,0,0}}, 
+    {{0,0,0,0},{1,0,0,0},{1,1,1,0},{0,0,0,0}}, 
+    {{0,0,0,0},{0,0,1,0},{1,1,1,0},{0,0,0,0}}  
+};
+
+int piece_x, piece_y, piece_index;
+int piece[4][4];
+
+void copy_piece(int index){
+    for(int y=0; y<4; y++)
+        for(int x=0; x<4; x++)
+            piece[y][x] = pieces[index][y][x];
+}
+
+void print_board() {
+    system("cls");
+    for(int y=0; y<HEIGHT; y++){
+        for(int x=0; x<WIDTH; x++){
+            int is_piece = 0;
+            for(int py=0; py<4; py++)
+                for(int px=0; px<4; px++)
+                    if(piece[py][px] && y==piece_y+py && x==piece_x+px)
+                        is_piece = 1;
+            if(is_piece) 
+                printf("\033[33m[]\033[0m");
+            else if(board[y][x]) 
+                printf("\033[33m[]\033[0m"); 
+            else 
+                printf("\033[34m .\033[0m"); 
+        }
+        printf("\n");
+    }
+    printf("Score: %d\n", score);
+}
+
+void fix_piece() {
+    for(int py=0; py<4; py++)
+        for(int px=0; px<4; px++)
+            if(piece[py][px] && piece_y+py >=0)
+                board[piece_y+py][piece_x+px] = 1;
+}
+
+void clear_lines() {
+    for(int y=0; y<HEIGHT; y++){
+        int full = 1;
+        for(int x=0; x<WIDTH; x++)
+            if(board[y][x]==0) full = 0;
+
+        if(full){
+            score += WIDTH;
+            for(int ty=y; ty>0; ty--)
+                for(int tx=0; tx<WIDTH; tx++)
+                    board[ty][tx] = board[ty-1][tx];
+            for(int tx=0; tx<WIDTH; tx++)
+                board[0][tx] = 0;
+        }
+    }
+}
+
+// Vérifie si la pièce peut se placer à la position (nx, ny) avec un tableau donné
+int valid_position(int nx, int ny, int mat[4][4]){
+    for(int py=0; py<4; py++)
+        for(int px=0; px<4; px++)
+            if(mat[py][px]){
+                int x = nx+px;
+                int y = ny+py;
+                if(x<0 || x>=WIDTH || y>=HEIGHT) return 0;
+                if(y>=0 && board[y][x]) return 0;
+            }
+    return 1;
+}
+
+// Rotation horaire
+void rotate_right(){
+    int tmp[4][4];
+    for(int y=0; y<4; y++)
+        for(int x=0; x<4; x++)
+            tmp[x][3-y] = piece[y][x];
+    if(valid_position(piece_x, piece_y, tmp))
+        for(int y=0; y<4; y++)
+            for(int x=0; x<4; x++)
+                piece[y][x] = tmp[y][x];
+}
+
+// Rotation anti-horaire
+void rotate_left(){
+    int tmp[4][4];
+    for(int y=0; y<4; y++)
+        for(int x=0; x<4; x++)
+            tmp[3-x][y] = piece[y][x];
+    if(valid_position(piece_x, piece_y, tmp))
+        for(int y=0; y<4; y++)
+            for(int x=0; x<4; x++)
+                piece[y][x] = tmp[y][x];
+}
+
+int main() {
+    srand(time(NULL));
+    piece_index = rand()%7;
+    copy_piece(piece_index);
+    piece_x = WIDTH/2 - 2;
+    piece_y = 0;
+
+    int game_over = 0;
+    clock_t last_tick = clock();
+
+    while(!game_over){
+        usleep(50000); 
+
+        // Gestion du clavier
+        if(kbhit()){
+            char c = getch();
+            if(c=='q' && valid_position(piece_x-1, piece_y, piece)) piece_x--;
+            else if(c=='d' && valid_position(piece_x+1, piece_y, piece)) piece_x++;
+            else if(c=='z') rotate_left();
+            else if(c=='s') rotate_right();
+            else if(c=='e'){ game_over=1; break;}
+        }
+
+        // Descente automatique toutes les TICK_USEC
+        if(clock() - last_tick >= TICK_USEC*CLOCKS_PER_SEC/1000000){
+            last_tick = clock();
+            if(valid_position(piece_x, piece_y+1, piece))
+                piece_y++;
+            else{
+                fix_piece();
+                clear_lines();
+                piece_index = rand()%7;
+                copy_piece(piece_index);
+                piece_x = WIDTH/2 - 2;
+                piece_y = 0;
+                if(!valid_position(piece_x, piece_y, piece)) game_over = 1;
+            }
+            print_board();
+        }
+    }
+
+    printf("Game Over! Score final: %d\n", score);
+    return 0;
+}
+
+/*--------------------------GOOD----GAME------------------------------*/
