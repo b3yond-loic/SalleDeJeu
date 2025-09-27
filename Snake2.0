@@ -1,0 +1,155 @@
+
+# Pour lancer, install: pip install pygame   lancer: python Snake2.0.py        
+# Petit code python fait avec ChatGPT, version amelioré avec mode easy sans mur, et mode hard avec mur.
+# Controle du serpent z,q,s,d. mode easy=1, mode hard=2, quitter=échap.
+
+import pygame
+import sys
+import random
+import os
+
+# Initialisation
+pygame.init()
+
+# Taille de la fenêtre
+WIDTH, HEIGHT = 600, 400
+CELL_SIZE = 20
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Snake 2.0")
+
+# Couleurs
+BLACK = (0, 0, 0)
+RED   = (200, 0, 0)
+WHITE = (255, 255, 255)
+
+# Police
+font = pygame.font.SysFont("arial", 25)
+
+# Fichier pour sauvegarder le meilleur score
+HIGH_SCORE_FILE = "HighScore-snake2.0.txt"
+
+def load_high_score():
+    if os.path.exists(HIGH_SCORE_FILE):
+        with open(HIGH_SCORE_FILE, "r") as f:
+            try:
+                return int(f.read().strip())
+            except ValueError:
+                return 0
+    return 0
+
+def save_high_score(score):
+    with open(HIGH_SCORE_FILE, "w") as f:
+        f.write(str(score))
+
+# Menu principal
+def menu():
+    while True:
+        screen.fill(BLACK)
+        title = font.render("Snake 2.0", True, WHITE)
+        easy = font.render("1 - Mode Easy (traverse les murs)", True, (0, 200, 0))
+        hard = font.render("2 - Mode Hard (classique)", True, RED)
+        quit_game = font.render("Echap - Quitter", True, WHITE)
+
+        screen.blit(title, (WIDTH//2 - title.get_width()//2, 50))
+        screen.blit(easy, (WIDTH//2 - easy.get_width()//2, 150))
+        screen.blit(hard, (WIDTH//2 - hard.get_width()//2, 200))
+        screen.blit(quit_game, (WIDTH//2 - quit_game.get_width()//2, 250))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    return "easy"
+                elif event.key == pygame.K_2:
+                    return "hard"
+                elif event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
+
+# Jeu
+def game(mode):
+    clock = pygame.time.Clock()
+
+    snake = [(100, 100)]
+    direction = (CELL_SIZE, 0)  # vers la droite
+    food = (random.randrange(0, WIDTH, CELL_SIZE), random.randrange(0, HEIGHT, CELL_SIZE))
+
+    score = 0
+    high_score = load_high_score()
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                save_high_score(high_score)
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_z and direction != (0, CELL_SIZE):
+                    direction = (0, -CELL_SIZE)
+                elif event.key == pygame.K_s and direction != (0, -CELL_SIZE):
+                    direction = (0, CELL_SIZE)
+                elif event.key == pygame.K_q and direction != (CELL_SIZE, 0):
+                    direction = (-CELL_SIZE, 0)
+                elif event.key == pygame.K_d and direction != (-CELL_SIZE, 0):
+                    direction = (CELL_SIZE, 0)
+
+        # Déplacement
+        new_head = (snake[0][0] + direction[0], snake[0][1] + direction[1])
+
+        # Mode easy -> traverser les murs
+        if mode == "easy":
+            new_head = (new_head[0] % WIDTH, new_head[1] % HEIGHT)
+        # Mode hard -> collision mur = game over
+        else:
+            if (new_head[0] < 0 or new_head[0] >= WIDTH or
+                new_head[1] < 0 or new_head[1] >= HEIGHT):
+                return
+
+        # Collision avec soi-même
+        if new_head in snake:
+            return
+
+        snake.insert(0, new_head)
+
+        # Manger la pomme
+        if snake[0] == food:
+            score += 1
+            food = (random.randrange(0, WIDTH, CELL_SIZE), random.randrange(0, HEIGHT, CELL_SIZE))
+            if score > high_score:
+                high_score = score
+                save_high_score(high_score)
+        else:
+            snake.pop()
+
+        # Dessin
+        screen.fill(BLACK)
+
+        # Dessin du serpent avec tête bleu clair et corps bleu foncé
+        for i, segment in enumerate(snake):
+            if i == 0:  # tête
+                pygame.draw.rect(screen, (0, 150, 255), (segment[0], segment[1], CELL_SIZE, CELL_SIZE))
+            else:  # corps
+                pygame.draw.rect(screen, (0, 0, 200), (segment[0], segment[1], CELL_SIZE, CELL_SIZE))
+
+        # Dessin de la pomme
+        pygame.draw.rect(screen, RED, (food[0], food[1], CELL_SIZE, CELL_SIZE))
+
+        # Affichage des scores
+        score_text = font.render(f"Score: {score}", True, WHITE)
+        high_score_text = font.render(f"Meilleur: {high_score}", True, WHITE)
+        screen.blit(score_text, (10, 10))
+        screen.blit(high_score_text, (10, 40))
+
+        pygame.display.flip()
+        clock.tick(10)
+
+# Boucle principale
+while True:
+    mode = menu()
+    game(mode)
+
+# GOOD GAME
